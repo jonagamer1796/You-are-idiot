@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Simple</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #71c5cf;
+        }
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #71c5cf 0%, #e0f7fa 100%);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = 320;
+        canvas.height = 480;
+
+        // Variables del juego
+        let bird = { x: 50, y: 150, width: 30, height: 30, velocity: 0, gravity: 0.5, jump: -8 };
+        let pipes = [];
+        let frame = 0;
+        let score = 0;
+        let gameOver = false;
+
+        // Dibujar pájaro
+        function drawBird() {
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(bird.x + 20, bird.y + 10, 5, 5); // Ojo
+        }
+
+        // Dibujar tuberías
+        function drawPipes() {
+            for(let i = 0; i < pipes.length; i++) {
+                let pipe = pipes[i];
+                ctx.fillStyle = '#2ecc71';
+                ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
+                ctx.fillRect(pipe.x, pipe.y + pipe.height + 120, pipe.width, canvas.height);
+                
+                // Bordes
+                ctx.strokeStyle = '#27ae60';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(pipe.x, pipe.y, pipe.width, pipe.height);
+                ctx.strokeRect(pipe.x, pipe.y + pipe.height + 120, pipe.width, canvas.height);
+            }
+        }
+
+        // Actualizar posición
+        function update() {
+            if(gameOver) return;
+
+            // Gravedad
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+
+            // Tocar suelo o techo
+            if(bird.y + bird.height > canvas.height || bird.y < 0) {
+                gameOver = true;
+            }
+
+            // Crear tuberías
+            if(frame % 100 === 0) {
+                let height = Math.floor(Math.random() * 200) + 50;
+                pipes.push({x: canvas.width, y: 0, width: 50, height: height, passed: false});
+            }
+
+            // Mover tuberías
+            for(let i = 0; i < pipes.length; i++) {
+                let pipe = pipes[i];
+                pipe.x -= 2;
+
+                // Colisión
+                if(
+                    bird.x < pipe.x + pipe.width &&
+                    bird.x + bird.width > pipe.x &&
+                    (bird.y < pipe.y + pipe.height || bird.y + bird.height > pipe.y + pipe.height + 120)
+                ) {
+                    gameOver = true;
+                }
+
+                // Puntuación
+                if(!pipe.passed && pipe.x + pipe.width < bird.x) {
+                    score++;
+                    pipe.passed = true;
+                }
+
+                // Eliminar tuberías que salen de pantalla
+                if(pipe.x + pipe.width < 0) {
+                    pipes.splice(i, 1);
+                    i--;
+                }
+            }
+
+            frame++;
+        }
+
+        // Dibujar puntuación
+        function drawScore() {
+            ctx.fillStyle = '#fff';
+            ctx.font = '30px Arial';
+            ctx.fillText(score, 10, 40);
+        }
+
+        // Dibujar Game Over
+        function drawGameOver() {
+            if(gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '40px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2);
+                ctx.font = '20px Arial';
+                ctx.fillText('Puntuación: ' + score, canvas.width/2, canvas.height/2 + 40);
+                ctx.fillText('Toca para reiniciar', canvas.width/2, canvas.height/2 + 70);
+            }
+        }
+
+        // Bucle principal
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawBird();
+            drawPipes();
+            update();
+            drawScore();
+            drawGameOver();
+
+            requestAnimationFrame(loop);
+        }
+
+        // Control: Salto y reinicio
+        document.addEventListener('keydown', function(e) {
+            if(e.code === 'Space') {
+                if(gameOver) {
+                    // Reiniciar juego
+                    bird = { x: 50, y: 150, width: 30, height: 30, velocity: 0, gravity: 0.5, jump: -8 };
+                    pipes = [];
+                    frame = 0;
+                    score = 0;
+                    gameOver = false;
+                } else {
+                    bird.velocity = bird.jump;
+                }
+            }
+        });
+
+        // También funciona con clic o toque
+        canvas.addEventListener('click', function() {
+            if(gameOver) {
+                bird = { x: 50, y: 150, width: 30, height: 30, velocity: 0, gravity: 0.5, jump: -8 };
+                pipes = [];
+                frame = 0;
+                score = 0;
+                gameOver = false;
+            } else {
+                bird.velocity = bird.jump;
+            }
+        });
+
+        loop();
+    </script>
+</body>
+</html>
